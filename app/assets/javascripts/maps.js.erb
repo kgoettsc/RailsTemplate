@@ -1,0 +1,86 @@
+function doMapStuff() {
+  console.log("here we 2sgo")
+
+  mapboxgl.accessToken = "<%= ENV['MB_ACCESS_TOKEN'] %>";
+
+  var filterGroup = document.getElementById('filter-group');
+  var map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/kgoettsche/cj3rkbgws000b2rqffwd9r66c'
+  });
+
+  var venueLayer = null;
+
+  map.on('load', function(){
+    venueLayer = map.getLayer('venues');
+
+    map.addSource('venues', {
+        type: 'vector',
+        url: 'mapbox://kgoettsche.cj3rk8fmw002v2qtdr3hzxt8x-4hzcj'
+    });
+
+    _.each(['darts','billiards','shuffleboard'], function(activity) {
+      var filterID = 'activity-' + activity;
+
+      var input = document.createElement('input');
+      input.type = 'checkbox';
+      input.id = filterID;
+      input.name = 'activity-filter';
+      input.checked = true;
+      filterGroup.appendChild(input);
+
+      var label = document.createElement('label');
+      label.setAttribute('for', filterID);
+      label.textContent = activity;
+      filterGroup.appendChild(label);
+
+      input.addEventListener('change', filterVenuesByActivity);
+
+    });
+
+    function filterVenuesByActivity(e) {
+      console.log("filtering AHAHA");
+      var selectedActivities = _.map($("input:checkbox[name=activity-filter]:checked"), function(selection) {
+        return selection.labels[0].innerHTML;
+      });
+      console.log("filtered AHAHA: " + selectedActivities);
+      var selectedFilters = _.concat(['any'], _.map(selectedActivities, function(activity){
+        return ['==', activity, true];
+      }));
+      map.setFilter('venues', ['any', selectedFilters]);
+      // map.setFilter('venues', ['any', ['==', 'darts', true], ['==', 'billiards', true]] );
+    }
+
+    map.on('click', 'venues', function(e) {
+      new mapboxgl.Popup()
+        .setLngLat(e.features[0].geometry.coordinates)
+        .setHTML(venueInfoModal(e.features[0].properties))
+        .addTo(map);
+    });
+
+    // Change the cursor to a pointer when the mouse is over the places layer.
+    map.on('mouseenter', 'venues', function () {
+        map.getCanvas().style.cursor = 'pointer';
+    });
+
+    // Change it back to a pointer when it leaves.
+    map.on('mouseleave', 'venues', function () {
+        map.getCanvas().style.cursor = '';
+    });
+  });
+}
+
+function venueInfoModal(venue) {
+  var t = _.map(JSON.parse(venue.activities), function(activity){
+    return _.capitalize(activity);
+  });
+  var htmlString = "<strong>"+venue.name+"</strong>";
+
+  htmlString += "<ul class='activities'>";
+  _.each(t, function(activity){
+    htmlString += "<li>"+activity+"</li>"
+  });
+  htmlString += "</ul>";
+
+  return "<div class='venue-tooltip'>"+htmlString+"</div>";
+}

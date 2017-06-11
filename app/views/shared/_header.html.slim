@@ -1,0 +1,9 @@
+.header
+  -if current_user
+    .col-md-2.text-center.header-item
+      = link_to "H", root_path
+    .col-md-2.text-center.header-item
+      = link_to "SO", signout_path
+  -else
+    .col-md-2.text-center.header-item
+      = link_to "LI", "/auth/google_oauth2", id: "sign_in"
